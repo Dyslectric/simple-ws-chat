@@ -1,0 +1,50 @@
+services:
+
+  traefik:
+    image: "traefik:v3.1"
+    container_name: "chatroom-traefik"
+    command: 
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+    ports:
+      - "4500:80"
+      - "8081:8080"
+
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  whoami:
+    image: "traefik/whoami"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+
+  backend:
+    build:
+      context: "./"
+      target: "backend"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.backend.rule: "PathPrefix(`/chatroom-api`)"
+      traefik.http.services.backend.loadbalancer.server.port: "4000"
+    develop:
+      watch:
+        - path: "./chatroom-backend"
+          action: "rebuild"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  static:
+    build:
+      context: "./"
+      target: "chatroom_static_dev"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.site.rule: "!PathPrefix(`/chatroom-api`)"
+      traefik.http.services.site.loadbalancer.server.port: "5173"
+    volumes:
+      - "./chatroom-static:/usr/local/chatroom-static"
+      

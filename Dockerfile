@@ -17,5 +17,5 @@ CMD ["./chatroom-api"]
 # Static Site
 FROM node:bookworm AS chatroom_static_dev
 WORKDIR /usr/local/chatroom-static/
-CMD npm run dev
+CMD npm install && npm run dev
 
